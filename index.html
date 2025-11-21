@@ -6,8 +6,8 @@
   <title>Flight Schedule Tracker</title>
   
   <!-- Theme Colors for Mobile -->
-  <meta name="theme-color" content="#1976D2">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#2196F3">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   
@@ -293,10 +293,11 @@
       padding: 20px;
       margin-top: 20px;
       overflow-x: auto;
+      scroll-behavior: smooth;
     }
 
     .gantt-chart {
-      min-width: 1200px;
+      min-width: 2400px;
       position: relative;
     }
 
@@ -515,7 +516,7 @@
       }
 
       .gantt-chart {
-        min-width: 900px;
+        min-width: 1800px;
       }
 
       .last-update {
@@ -840,7 +841,7 @@
             <i data-lucide="plane-landing" size="20"></i>
           </div>
           <div class="modal-info-content">
-            <div class="modal-info-label">เวลาเปิดเช็คอิน</div>
+            <div class="modal-info-label">เวลาถึง (เครื่องมาถึง)</div>
             <div class="modal-info-value" id="modalArrivalTime">-</div>
             <div id="modalOvernightBadge" style="display: none;"></div>
           </div>
@@ -869,7 +870,7 @@
 
   <script>
     // ⚠️ แก้ไข API_URL ให้เป็น URL ที่ได้จาก Google Apps Script
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzBmlb05hqoRJdNnQVkQyX-DMr7grrNQUhtCKljqeU52tH1wjpzUWV2edrRBSNWuvt3/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwza4H4g8yc1TjoJLTBxPu_Q3a7z523Sn8ajJU_QPHrQGqXbc8Ios89uo4I6BT65A7XPA/exec';
     
     let allFlights = [];
     let updateInterval;
@@ -968,6 +969,29 @@
       return { total, active, completed, upcoming };
     }
 
+    // Scroll to current time line
+    function scrollToCurrentTime() {
+      const container = document.getElementById('ganttChartContainer');
+      const currentTimeLine = container.querySelector('.current-time-line');
+      
+      if (currentTimeLine && container) {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const currentTimePercent = (currentMinutes / 1440) * 100;
+        
+        // Calculate scroll position
+        // 150px is the width of flight labels
+        const chartWidth = container.scrollWidth - 150;
+        const scrollPosition = (chartWidth * currentTimePercent / 100) - (container.clientWidth / 2) + 150;
+        
+        // Smooth scroll to position
+        container.scrollTo({
+          left: Math.max(0, scrollPosition),
+          behavior: 'smooth'
+        });
+      }
+    }
+
     // Initialize app
     window.onload = function() {
       loadData();
@@ -1018,6 +1042,9 @@
         document.getElementById('errorContainer').style.display = 'none';
         document.getElementById('ganttChartContainer').style.display = 'block';
 
+        // Scroll to current time after chart is displayed
+        setTimeout(scrollToCurrentTime, 300);
+
       } catch (error) {
         handleError(error.message);
       }
@@ -1056,12 +1083,16 @@
         return;
       }
 
-      // Generate time axis (00.00 - 24.00, every 3 hours)
+      // Generate time axis (00:00 - 24:00, every 30 minutes)
       const timeLabels = [];
-      for (let hour = 0; hour <= 24; hour += 3) {
-        const timeStr = `${hour.toString().padStart(2, '0')}.00`;
-        timeLabels.push(timeStr);
+      for (let hour = 0; hour < 24; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+          const timeStr = `${hour.toString().padStart(2, '0')}.${minute.toString().padStart(2, '0')}`;
+          timeLabels.push(timeStr);
+        }
       }
+      // Add 24:00
+      timeLabels.push('24.00');
 
       // Create time axis HTML
       const timeAxisHTML = timeLabels.map(time => 
@@ -1230,6 +1261,7 @@
       
       if (query === '') {
         displayGanttChart(allFlights);
+        setTimeout(scrollToCurrentTime, 300);
         return;
       }
 
@@ -1297,4 +1329,3 @@
   </script>
 </body>
 </html>
-
